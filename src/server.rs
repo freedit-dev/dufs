@@ -1363,15 +1363,8 @@ impl Server {
         };
         let mtime = to_timestamp(&meta.modified()?);
         let size = match path_type {
-            PathType::Dir | PathType::SymlinkDir => {
-                let mut count = 0;
-                let mut entries = tokio::fs::read_dir(&path).await?;
-                while entries.next_entry().await?.is_some() {
-                    count += 1;
-                }
-                count
-            }
-            PathType::File | PathType::SymlinkFile => meta.len(),
+            PathType::Dir | PathType::SymlinkDir => None,
+            PathType::File | PathType::SymlinkFile => Some(meta.len()),
         };
         let rel_path = path.strip_prefix(base_path)?;
         let name = normalize_path(rel_path);
@@ -1423,7 +1416,7 @@ struct PathItem {
     path_type: PathType,
     name: String,
     mtime: u64,
-    size: u64,
+    size: Option<u64>,
 }
 
 impl PathItem {
@@ -1457,18 +1450,21 @@ impl PathItem {
             ),
             PathType::File | PathType::SymlinkFile => format!(
                 r#"<D:response>
-<D:href>{href}</D:href>
+<D:href>{}</D:href>
 <D:propstat>
 <D:prop>
-<D:displayname>{displayname}</D:displayname>
+<D:displayname>{}</D:displayname>
 <D:getcontentlength>{}</D:getcontentlength>
-<D:getlastmodified>{mtime}</D:getlastmodified>
+<D:getlastmodified>{}</D:getlastmodified>
 <D:resourcetype></D:resourcetype>
 </D:prop>
 <D:status>HTTP/1.1 200 OK</D:status>
 </D:propstat>
 </D:response>"#,
-                self.size
+                href,
+                displayname,
+                self.size.unwrap_or_default(),
+                mtime
             ),
         }
     }
@@ -1495,7 +1491,16 @@ impl PathItem {
 
     pub fn sort_by_size(&self, other: &Self) -> Ordering {
         match self.path_type.cmp(&other.path_type) {
-            Ordering::Equal => self.size.cmp(&other.size),
+            Ordering::Equal => {
+                if self.is_dir() {
+                    alphanumeric_sort::compare_str(
+                        self.name.to_lowercase(),
+                        other.name.to_lowercase(),
+                    )
+                } else {
+                    self.size.unwrap_or(0).cmp(&other.size.unwrap_or(0))
+                }
+            }
             v => v,
         }
     }
