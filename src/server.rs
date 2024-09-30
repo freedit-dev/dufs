@@ -583,11 +583,15 @@ impl Server {
             .get("q")
             .ok_or_else(|| anyhow!("invalid q"))?
             .to_lowercase();
+        let search_type = query_params
+            .get("t")
+            .map(|v| v.to_lowercase())
+            .unwrap_or_default();
         if search.is_empty() {
             return self
                 .handle_ls_dir(path, true, query_params, head_only, user, access_paths, res)
                 .await;
-        } else {
+        } else if search_type == "exact" {
             let path_buf = path.to_path_buf();
             let hidden = Arc::new(self.args.hidden.to_vec());
             let hidden = hidden.clone();
@@ -626,6 +630,36 @@ impl Server {
                             continue;
                         }
                         paths.push(entry_path.to_path_buf());
+                        if paths.len() >= 1000 {
+                            break;
+                        }
+                    }
+                }
+                paths
+            })
+            .await?;
+            for search_path in search_paths.into_iter() {
+                if let Ok(Some(item)) = self.to_pathitem(search_path, path.to_path_buf()).await {
+                    paths.push(item);
+                }
+            }
+        } else {
+            let search_paths = tokio::task::spawn_blocking(move || {
+                let mut paths: Vec<PathBuf> = vec![];
+                match std::process::Command::new("lolcate").arg(&search).output() {
+                    Ok(output) => {
+                        if output.status.success() {
+                            let output = String::from_utf8_lossy(&output.stdout);
+                            for line in output.lines() {
+                                paths.push(PathBuf::from(line));
+                                if paths.len() >= 1000 {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        error!("Failed to search {}, {}", search, e);
                     }
                 }
                 paths
