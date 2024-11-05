@@ -47,7 +47,7 @@ fn hidden_propfind_dir(#[case] server: TestServer, #[case] exist: bool) -> Resul
 #[case(server(&["--allow-search"] as &[&str]), true)]
 #[case(server(&["--allow-search", "--hidden", ".git,test.html"]), false)]
 fn hidden_search_dir(#[case] server: TestServer, #[case] exist: bool) -> Result<(), Error> {
-    let resp = reqwest::blocking::get(format!("{}?q={}", server.url(), "test.html"))?;
+    let resp = reqwest::blocking::get(format!("{}?q={}&t=exact", server.url(), "test.html"))?;
     assert_eq!(resp.status(), 200);
     let paths = utils::retrieve_index_paths(&resp.text()?);
     for p in paths {

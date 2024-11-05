@@ -268,7 +268,7 @@ fn auth_partial_index(
     let paths = utils::retrieve_index_paths(&resp.text()?);
     assert_eq!(paths, IndexSet::from(["dir1/".into(), "dir2/".into()]));
     let resp = send_with_digest_auth(
-        fetch!(b"GET", format!("{}?q={}", server.url(), "test.html")),
+        fetch!(b"GET", format!("{}?q={}&t=exact", server.url(), "test.html")),
         "user",
         "pass",
     )?;

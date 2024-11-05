@@ -56,7 +56,7 @@ fn render_try_index3(
 #[case(server(&["--render-try-index"] as &[&str]), false)]
 #[case(server(&["--render-try-index", "--allow-search"] as &[&str]), true)]
 fn render_try_index4(#[case] server: TestServer, #[case] searched: bool) -> Result<(), Error> {
-    let resp = reqwest::blocking::get(format!("{}{}?q={}", server.url(), DIR_NO_INDEX, BIN_FILE))?;
+    let resp = reqwest::blocking::get(format!("{}{}?q={}&t=exact", server.url(), DIR_NO_INDEX, BIN_FILE))?;
     assert_eq!(resp.status(), 200);
     let paths = utils::retrieve_index_paths(&resp.text()?);
     assert_eq!(paths.iter().all(|v| v.contains(BIN_FILE)), searched);
