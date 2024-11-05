@@ -109,7 +109,7 @@ fn get_dir_search(#[with(&["-A"])] server: TestServer) -> Result<(), Error> {
 
 #[rstest]
 fn get_dir_search2(#[with(&["-A"])] server: TestServer) -> Result<(), Error> {
-    let resp = reqwest::blocking::get(format!("{}?q={BIN_FILE}&q=exact", server.url()))?;
+    let resp = reqwest::blocking::get(format!("{}?q={BIN_FILE}&t=exact", server.url()))?;
     assert_eq!(resp.status(), 200);
     let paths = utils::retrieve_index_paths(&resp.text()?);
     assert!(!paths.is_empty());
