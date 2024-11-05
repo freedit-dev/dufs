@@ -121,7 +121,8 @@ fn get_dir_search2(#[with(&["-A"])] server: TestServer) -> Result<(), Error> {
 
 #[rstest]
 fn get_dir_search3(#[with(&["-A"])] server: TestServer) -> Result<(), Error> {
-    let resp = reqwest::blocking::get(format!("{}?q={}&t=exact&simple", server.url(), "test.html"))?;
+    let resp =
+        reqwest::blocking::get(format!("{}?q={}&t=exact&simple", server.url(), "test.html"))?;
     assert_eq!(resp.status(), 200);
     let text = resp.text().unwrap();
     assert!(text.split('\n').any(|v| v == "test.html"));
@@ -139,7 +140,11 @@ fn get_dir_search4(#[with(&["-A"])] server: TestServer) -> Result<(), Error> {
 
 #[rstest]
 fn head_dir_search(#[with(&["-A"])] server: TestServer) -> Result<(), Error> {
-    let resp = fetch!(b"HEAD", format!("{}?q={}&t=exact", server.url(), "test.html")).send()?;
+    let resp = fetch!(
+        b"HEAD",
+        format!("{}?q={}&t=exact", server.url(), "test.html")
+    )
+    .send()?;
     assert_eq!(resp.status(), 200);
     assert_eq!(
         resp.headers().get("content-type").unwrap(),
