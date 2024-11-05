@@ -69,7 +69,7 @@ fn allow_upload_delete_can_override(#[with(&["-A"])] server: TestServer) -> Resu
 
 #[rstest]
 fn allow_search(#[with(&["--allow-search"])] server: TestServer) -> Result<(), Error> {
-    let resp = reqwest::blocking::get(format!("{}?q={}", server.url(), "test.html"))?;
+    let resp = reqwest::blocking::get(format!("{}?q={}&t=exact", server.url(), "test.html"))?;
     assert_eq!(resp.status(), 200);
     let paths = utils::retrieve_index_paths(&resp.text()?);
     assert!(!paths.is_empty());
