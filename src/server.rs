@@ -594,7 +594,7 @@ impl Server {
             return self
                 .handle_ls_dir(path, true, query_params, head_only, user, access_paths, res)
                 .await;
-        } else if search_type == "exact" {
+        } else if search_type != "quick" {
             let hidden = Arc::new(self.args.hidden.to_vec());
             let hidden = hidden.clone();
             let running = self.running.clone();
