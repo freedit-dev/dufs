@@ -543,7 +543,7 @@ function setupSearch() {
     const q = formData.get("q");
     let href = baseUrl();
     if (q) {
-      href += "?q=" + q;
+      href += "?t=quick&q=" + q;
     }
     location.href = href;
   });

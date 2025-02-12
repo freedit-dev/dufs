@@ -587,20 +587,20 @@ impl Server {
         let search_type = query_params
             .get("t")
             .map(|v| v.to_lowercase())
-            .unwrap_or_else(|| "exact".to_string());
+            .unwrap_or_default();
+        let path_buf = path.to_path_buf();
+        let access = access_paths.clone().entry_paths(&path_buf);
         if search.is_empty() {
             return self
                 .handle_ls_dir(path, true, query_params, head_only, user, access_paths, res)
                 .await;
         } else if search_type == "exact" {
-            let path_buf = path.to_path_buf();
             let hidden = Arc::new(self.args.hidden.to_vec());
             let hidden = hidden.clone();
             let running = self.running.clone();
-            let access_paths = access_paths.clone();
             let search_paths = tokio::task::spawn_blocking(move || {
                 let mut paths: Vec<PathBuf> = vec![];
-                for dir in access_paths.entry_paths(&path_buf) {
+                for dir in access {
                     let mut it = WalkDir::new(&dir).into_iter();
                     it.next();
                     while let Some(Ok(entry)) = it.next() {
@@ -639,9 +639,13 @@ impl Server {
                 match std::process::Command::new("lolcate").arg(&search).output() {
                     Ok(output) => {
                         if output.status.success() {
+                            let access_str: Vec<_> =
+                                access.iter().filter_map(|v| v.to_str()).collect();
                             let output = String::from_utf8_lossy(&output.stdout);
                             for line in output.lines() {
-                                paths.push(PathBuf::from(line));
+                                if access_str.iter().any(|v| line.starts_with(v)) {
+                                    paths.push(PathBuf::from(line));
+                                }
                                 if paths.len() >= 1000 {
                                     break;
                                 }
