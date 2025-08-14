@@ -506,7 +506,7 @@ impl Server {
         };
         let stream = IncomingStream::new(req.into_body());
 
-        let body_with_io_error = stream.map_err(|err| io::Error::new(io::ErrorKind::Other, err));
+        let body_with_io_error = stream.map_err(io::Error::other);
         let body_reader = StreamReader::new(body_with_io_error);
 
         pin_mut!(body_reader);
@@ -653,7 +653,7 @@ impl Server {
                         }
                     }
                     Err(e) => {
-                        error!("Failed to search {}, {}", search, e);
+                        error!("Failed to search {search}, {e}");
                     }
                 }
                 paths
@@ -686,7 +686,7 @@ impl Server {
     ) -> Result<()> {
         let (mut writer, reader) = tokio::io::duplex(BUF_SIZE);
         let filename = try_get_file_name(path)?;
-        set_content_disposition(res, false, &format!("{}.zip", filename))?;
+        set_content_disposition(res, false, &format!("{filename}.zip"))?;
         res.headers_mut()
             .insert("content-type", HeaderValue::from_static("application/zip"));
         if head_only {
@@ -909,7 +909,7 @@ impl Server {
                     file.seek(SeekFrom::Start(start)).await?;
                     let range_size = end - start + 1;
                     *res.status_mut() = StatusCode::PARTIAL_CONTENT;
-                    let content_range = format!("bytes {}-{}/{}", start, end, size);
+                    let content_range = format!("bytes {start}-{end}/{size}");
                     res.headers_mut()
                         .insert(CONTENT_RANGE, content_range.parse()?);
                     res.headers_mut()
@@ -933,7 +933,7 @@ impl Server {
                     for (start, end) in ranges {
                         file.seek(SeekFrom::Start(start)).await?;
                         let range_size = end - start + 1;
-                        let content_range = format!("bytes {}-{}/{}", start, end, size);
+                        let content_range = format!("bytes {start}-{end}/{size}");
                         let part_header = format!(
                             "--{boundary}\r\nContent-Type: {content_type}\r\nContent-Range: {content_range}\r\n\r\n",
                         );
@@ -1537,7 +1537,7 @@ impl PathItem {
     }
 
     pub fn base_name(&self) -> &str {
-        self.name.split('/').last().unwrap_or_default()
+        self.name.split('/').next_back().unwrap_or_default()
     }
 
     pub fn sort_by_name(&self, other: &Self) -> Ordering {
@@ -1749,7 +1749,7 @@ fn set_content_disposition(res: &mut Response, inline: bool, filename: &str) -> 
         })
         .collect();
     let value = if filename.is_ascii() {
-        HeaderValue::from_str(&format!("{kind}; filename=\"{}\"", filename,))?
+        HeaderValue::from_str(&format!("{kind}; filename=\"{filename}\"",))?
     } else {
         HeaderValue::from_str(&format!(
             "{kind}; filename=\"{}\"; filename*=UTF-8''{}",
@@ -1844,7 +1844,7 @@ async fn sha256_file(path: &Path) -> Result<String> {
     }
 
     let result = hasher.finalize();
-    Ok(format!("{:x}", result))
+    Ok(format!("{result:x}"))
 }
 
 fn has_query_flag(query_params: &HashMap<String, String>, name: &str) -> bool {
