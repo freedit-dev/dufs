@@ -62,7 +62,7 @@ tls = ["rustls-pemfile", "tokio-rustls"]
 assert_cmd = "2"
 reqwest = { version = "0.12", features = ["blocking", "multipart", "rustls-tls"], default-features = false }
 assert_fs = "1"
-port_check = "0.2"
+port_check = "0.3"
 rstest = "0.26"
 regex = "1"
 url = "2"
